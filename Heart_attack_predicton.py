@@ -27,34 +27,26 @@ Created on Tue Jun 21 09:43:42 2022
     # 13) thall: [0,1,2,3] --> categorical
     # 14) output: [0,1] --> categorical
 
-
-
 import os
 import pandas as pd
+import numpy as np
+import pickle
 
-#%% Functions
+from sklearn.model_selection import train_test_split,GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import MinMaxScaler,StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import classification_report,confusion_matrix,accuracy_score
 
-import scipy.stats as ss
-def cramers_corrected_stat(confusion_matrix):
-    """ calculate Cramers V statistic for categorial-categorial association.
-        uses correction from Bergsma and Wicher, 
-        Journal of the Korean Statistical Society 42 (2013): 323-328
-    """
-    chi2 = ss.chi2_contingency(confusion_matrix)[0]
-    n = confusion_matrix.sum()
-    phi2 = chi2/n
-    r,k = confusion_matrix.shape
-    phi2corr = max(0, phi2 - ((k-1)*(r-1))/(n-1))    
-    rcorr = r - ((r-1)**2)/(n-1)
-    kcorr = k - ((k-1)**2)/(n-1)
-    return np.sqrt(phi2corr / min( (kcorr-1), (rcorr-1)))
-
-
+from modules_for_heart_attack_prediction import functions,EDA
 
 #%% Static
 CSV_PATH = os.path.join(os.getcwd(),'heart.csv')
-
-
+BEST_MODEL_PATH = os.path.join(os.getcwd(),'best_model.pkl')
+BEST_PIPE_PATH = os.path.join(os.getcwd(),'best_pipe.pkl')
 
 #%% EDA
 # Step 1) Data Loading
@@ -68,20 +60,10 @@ df.info() # No NaNs
 df.describe().T
 
     # To visualize the data:
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 con_columns = ['age','trtbps','chol','thalachh','oldpeak']
-for con in con_columns:
-    plt.figure()
-    sns.distplot(df[con])
-    plt.show()
-
 cat_columns = ['sex','cp','fbs','restecg','exng','slp','caa','thall','output']
-for cat in cat_columns:
-    plt.figure()
-    sns.countplot(df[cat])
-    plt.show()
+eda = EDA()
+eda.plot_graph(df,con_columns,cat_columns)
 
 # Early hypothesis:
     # Inferences can be made when analysing the graph.
@@ -90,7 +72,6 @@ df.boxplot() # trtbps and chol have outliers
 
 # To check the presence of NaNs and Duplicates
 df.isna().sum() # There is no presence of NaNs
-
 df.duplicated().sum() # There is 1 duplicated data in dataset.
 df[df.duplicated()] # To show the duplicated data. The duplicated data at row 164.
 
@@ -122,9 +103,6 @@ df_copied.describe().T # The maximum reading of cholesterol level is 417 mg/dl
                                             # (to determine the accuracy,r/s in between)
     # 2) Categorical vs categorical data
 
-from sklearn.linear_model import LogisticRegression
-import numpy as np
-
 # Continuous vs categorical data
 for con in con_columns:
     print(con)
@@ -137,10 +115,11 @@ for con in con_columns:
 # thus, those features will be selected for the subsequent steps.
 
 # Categorical vs categorical data
+func = functions()
 for cat in cat_columns:
     print(cat)
     confusion_mat = pd.crosstab(df_copied[cat],df_copied['output']).to_numpy()
-    print(cramers_corrected_stat(confusion_mat))
+    print(func.cramers_corrected_stat(confusion_mat))
 
 # Therefore, thall and cp are the two highest among all which achieved 
 # correlation of 52% and 50% respectively. Hence, those two will be selected
@@ -152,45 +131,35 @@ for cat in cat_columns:
 
 X = df_copied.loc[:,['thalachh','oldpeak','age','thall','cp']]
 y = df_copied['output']
-
-from sklearn.model_selection import train_test_split
-
 X_train,X_test,y_train,y_test = train_test_split(X,y,
                                                  test_size=0.3,
                                                  random_state=123)
 
 #%% Pipeline
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import MinMaxScaler,StandardScaler
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsClassifier
-
 # Logistic regression
 step_mms_lr = Pipeline([('mms',MinMaxScaler()),
                       ('lr',LogisticRegression())])
 
 step_ss_lr = Pipeline([('ss',StandardScaler()),
-                     ('lr',LogisticRegression())])
+                      ('lr',LogisticRegression())])
 
 # Random forest
 step_mms_rf = Pipeline([('mms',MinMaxScaler()),
                       ('rf',RandomForestClassifier())])
 
 step_ss_rf = Pipeline([('ss',StandardScaler()),
-                     ('rf',RandomForestClassifier())])
+                      ('rf',RandomForestClassifier())])
 
 # Decision tree
 step_mms_dt = Pipeline([('mms',MinMaxScaler()),
                       ('dt',DecisionTreeClassifier())])
 
 step_ss_dt = Pipeline([('ss',StandardScaler()),
-                     ('dt',DecisionTreeClassifier())])
+                      ('dt',DecisionTreeClassifier())])
 
 # KNeighbors
 step_mms_knn = Pipeline([('mms',MinMaxScaler()),
-                       ('knn',KNeighborsClassifier())])
+                        ('knn',KNeighborsClassifier())])
 
 step_ss_knn = Pipeline([('ss',StandardScaler()),
                       ('knn',KNeighborsClassifier())])
@@ -213,7 +182,6 @@ for i,model in enumerate(pipelines):
         best_accuracy = model.score(X_test,y_test)
         best_pipeline = model
 
-
 print('The best pipeline for this Heart Attack Dataset is {} with accuracy of {}'.format(best_pipeline,best_accuracy))
 
 #%% Model fine tuning
@@ -230,22 +198,17 @@ grid_param = [{'rf':[RandomForestClassifier()],
                'rf__max_depth':[3,5,7,10,None],
                'rf__min_samples_leaf':np.arange(1,5)}]
 
-from sklearn.model_selection import GridSearchCV
-
 gridsearch = GridSearchCV(pipeline_rf,grid_param,cv=5,verbose=1,n_jobs=-1)
 best_model = gridsearch.fit(X_train,y_train)
 
 #%%% Retrain model with selected parameters
-import pickle
 step_mms_rf = Pipeline([('mms',MinMaxScaler()),
                       ('rf',RandomForestClassifier(n_estimators=10,
                                                     min_samples_leaf=4,
-                                                    max_depth=3))])
-
+                                                    max_depth=7))])
 
 step_mms_rf.fit(X_train,y_train)
 
-BEST_MODEL_PATH = os.path.join(os.getcwd(),'best_model.pkl')
 with open(BEST_MODEL_PATH,'wb') as file:
     pickle.dump(step_mms_rf,file)
 
@@ -254,25 +217,17 @@ print(best_model.score(X_test,y_test))
 print(best_model.best_index_)
 print(best_model.best_params_)
 
-# For Random Forest Classifier, the best number of estimator is 1000, 
-# max depth is 3 and min samples leaf is 4
-# The accuracy doesn't change and stays at 79%
+# For Random Forest Classifier, the best number of estimator is 10, 
+# max depth is 7 and min samples leaf is 4
+# The accuracy dropped from 80% to 76%
 
 # Packaging model
-import pickle
-
-BEST_PIPE_PATH = os.path.join(os.getcwd(),'best_pipe.pkl')
 with open(BEST_PIPE_PATH,'wb') as file:
     pickle.dump(best_model,file)
 
 #%% Model analysis
-
-from sklearn.metrics import classification_report,confusion_matrix
-from sklearn.metrics import accuracy_score
-
 y_true = y_test
 y_pred = best_model.predict(X_test)
-
 print(classification_report(y_true,y_pred))
 print(confusion_matrix(y_true,y_pred))
 print(accuracy_score(y_true,y_pred))
@@ -296,77 +251,7 @@ print(accuracy_score(y_true,y_pred))
     # 7) For someone has cholesterol level of 564 mg/dl is possible especially
          # for someone with familial hypercholesterolemia.
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# Discussion
+# The best combination for this dataset is between MinMaxScaler and RandomForest
+# The accuracy achieved is around 80%
+# But after doing the the model fine tuning, the accuracy dropped to 76%
