@@ -43,11 +43,55 @@
 
 ### STEPS
 #### 1) EDA
-    Step 1) Data loading
-    Step 2) Data inspection
-    Step 3) Data cleaning
-    Step 4) Features selection
-    Step 5) Pre-processing
+###### Step 1) Data loading  
+###### Step 2) Data inspection
+![](Images/age.png)
+![](Images/trtbps.png)
+![](Images/chol.png)
+![](Images/thalach.png)
+![](Images/oldpeak.png)
+![](Images/sex.png)
+![](Images/cp.png)
+![](Images/fbs.png)
+![](Images/restecg.png)
+![](Images/exng.png)
+![](Images/slp.png)
+![](Images/caa.png)
+![](Images/thall.png)
+![](Images/output.png)
+![](Images/boxplot.png)
+
+```
+# Dataset description:
+    # 1) Patients' age have normal distribution with an average at 54 years old.
+    # 2) The minimum and maximum resting blood pressure (trtbps) among the patients
+         # at 94 mmHg and 200 mmHg respectively with average at 131 mmHg.
+    # 3) The minimum and maximum cholesterol (chol) among the patients
+         # at 126 mg/dl and 564 mg/dl respectively with average at 246 mg/dl.
+    # 4) The patients maximum heart rate achieved distribution 
+         # is a little bit negatively skewed. The minimum and maximum heart rate 
+         # achieved (thalachh) among the patients at 71 BPM and 202 BPM 
+         # respectively with average at 149 BPM.
+    # 5) The oldpeak distribution is rightly skewed (positively skewed) with
+         # minimum and maximum at 0 and 6.2 respectively. Meanwhile tha average
+         # at 1.
+    # 6) The maximum resting blood pressure at 200mmHg indicates extremely 
+         # high blood pressure and leads to stroke
+    # 7) For someone has cholesterol level of 564 mg/dl is possible especially
+         # for someone with familial hypercholesterolemia.
+```
+###### Step 3) Data cleaning
+```
+# List of things to be filtered:
+    # 1) Duplicated data
+    # 2) Remove rare reading of cholesterol level (>500mg/dl)
+         # Readings at 500 mg/dl and more considered rare cases.
+```
+###### Step 4) Features selection
+![](Images/)
+![](Images/)
+
+###### Step 5) Pre-processing
 #### 2) PIPELINE
 #### 3) MODEL FINE TUNING
 #### 4) RETRAIN MODEL WITH SELECTED PARAMETERS
