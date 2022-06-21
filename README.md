@@ -88,23 +88,40 @@
          # Readings at 500 mg/dl and more considered rare cases.
 ```
 ###### Step 4) Features selection
-![](Images/)
-![](Images/)
+![](Images/fs1.png)
+![](Images/fs2.png)
+```
+# Regression Analysis:
+    # 1) Continuous vs categorical data --> Logistic Regression 
+                                            # (to determine the accuracy,r/s in between)
+    # 2) Categorical vs categorical data
 
+# Since thalachh (maximum heart rate achived),oldpeak and age achieved 70%,68%
+# and 62% respectively trained by logistic regression against output,
+# thus, those features will be selected for the subsequent steps.
+
+# Therefore, thall and cp are the two highest among all which achieved 
+# correlation of 52% and 50% respectively. Hence, those two will be selected
+# for the subsequent steps.
+```
 ###### Step 5) Pre-processing
+```
+# First, check whether MinMaxScaler or StandardScaler work best in combination 
+# with which classifiers for the dataset.
+```
 #### 2) PIPELINE
+![](Images/Pipeline.png)
 #### 3) MODEL FINE TUNING
 #### 4) RETRAIN MODEL WITH SELECTED PARAMETERS
 #### 5) MODEL ANALYSIS
+![](Images/model_analysis.png)
 #### 6) DISCUSSION
- 
-
-
-
-
-
-
-
+```
+# Discussion
+# The best combination for this dataset is between MinMaxScaler and RandomForest
+# The accuracy achieved is around 80%
+# But after doing the the model fine tuning, the accuracy dropped to 76%
+```
 ## CREDITS
 Dataset obtain from:
 https://www.kaggle.com/rashikrahmanpritom/heart-attack-analysis-prediction-dataset
